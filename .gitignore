@@ -1,0 +1,9 @@
+node_modules/
+.env
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!jsconfig.json
+learnloop-*.json
+*-firebase-adminsdk-*.json
