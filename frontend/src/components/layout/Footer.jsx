@@ -105,7 +105,7 @@ const Footer = () => {
             © {new Date().getFullYear()} LearnLoop Inc. All rights reserved.
           </p>
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)' }}>
-            Built with <span style={{ color: '#ff6b6b' }}>♥</span> using AI
+            Built with <span style={{ color: '#ff6b6b' }}>♥</span> for the Community
           </p>
         </div>
       </div>
