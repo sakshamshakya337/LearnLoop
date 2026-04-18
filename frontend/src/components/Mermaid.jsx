@@ -3,9 +3,10 @@ import mermaid from "mermaid";
 
 mermaid.initialize({
   startOnLoad: false,
-  theme: "dark", // Tailored for LearnLoop's dark aesthetics
+  theme: "dark", 
   securityLevel: 'loose',
   fontFamily: 'Sora, sans-serif',
+  flowchart: { htmlLabels: false }
 });
 
 export default function Mermaid({ chart }) {

@@ -166,15 +166,16 @@ router.post('/generate/:moduleId', async (req, res) => {
       return i < remainder ? base + 1 : base;
     });
 
-    const chunkPromises = chunks.map((chunk, i) =>
-      generateCardsFromChunk(chunk, Math.max(1, cardsPerChunk[i]), difficulty)
-        .catch(err => {
-          console.error(`Chunk ${i} failed:`, err.message);
-          return [];
-        })
-    );
-
-    const chunkResults = await Promise.all(chunkPromises);
+    const chunkResults = [];
+    for (const [i, chunk] of chunks.entries()) {
+      try {
+        const result = await generateCardsFromChunk(chunk, Math.max(1, cardsPerChunk[i]), difficulty);
+        chunkResults.push(result);
+      } catch (err) {
+        console.error(`Chunk ${i} failed:`, err.message);
+        chunkResults.push([]);
+      }
+    }
     let allCards = chunkResults.flat();
 
     const seen = new Set();

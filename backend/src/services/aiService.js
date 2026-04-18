@@ -73,7 +73,13 @@ async function generateNotes(text) {
     
     // Clean up potential markdown blocks the LLM might have added anyway
     const cleanedJson = responseText.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
-    return JSON.parse(cleanedJson);
+    const notes = JSON.parse(cleanedJson);
+    
+    if (notes.diagram) {
+      notes.diagram = sanitizeMermaid(notes.diagram);
+    }
+    
+    return notes;
   } catch (err) {
     console.error('AI generateNotes error:', err);
     throw new Error('Failed to generate notes via Gemini/OpenRouter: ' + err.message);
@@ -175,6 +181,21 @@ async function generateQuizzes(text, count = 5) {
   }
 }
 
+function sanitizeMermaid(raw) {
+  if (!raw) return '';
+  return raw
+    .replace(/^```mermaid\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim()
+    .split('\n')
+    .map(line =>
+      line
+        .replace(/\[([^\]]+)\]/g, (_, t) => `[${t.replace(/\//g,' ').replace(/[<>"\\]/g,' ')}]`)
+        .replace(/\(([^)]+)\)/g, (_, t) => `(${t.replace(/\//g,' ').replace(/[<>"\\]/g,' ')})`)
+    ).join('\n');
+}
+
 /**
  * Generate a standalone Mermaid Diagram from text
  */
@@ -201,6 +222,7 @@ async function generateDiagram(text) {
     if (openRouter) {
       const response = await openRouter.chat.completions.create({
         model: 'google/gemini-2.5-flash',
+        max_tokens: 4000,
         messages: [{ role: 'user', content: prompt }]
       });
       diagramCode = response.choices[0].message.content.trim();
@@ -210,7 +232,7 @@ async function generateDiagram(text) {
       diagramCode = result.response.text().trim();
     }
 
-    return diagramCode.replace(/```mermaid/g, '').replace(/```/g, '').trim();
+    return sanitizeMermaid(diagramCode);
   } catch (err) {
     console.error('Diagram gen error:', err);
     return "graph TD\nA[Error generating diagram] --> B[Check content]";
