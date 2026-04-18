@@ -5,19 +5,22 @@ require('dotenv').config();
 
 const app = express();
 
-// Middleware: Dynamic CORS for Production (Vercel)
+// Middleware: Dynamic CORS for Production (Vercel + local dev)
 const allowedOrigins = [
   'http://localhost:5173',
-  process.env.FRONTEND_URL, // e.g., https://learnloop.vercel.app
+  'http://localhost:3000',
+  process.env.FRONTEND_URL,
 ].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    // Allow all vercel.app preview/production URLs
+    if (origin.endsWith('.vercel.app')) return callback(null, true);
+    // Allow explicitly listed origins
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true
 }));
@@ -63,7 +66,5 @@ app.get('/', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'LearnLoop API is running smoothly' });
 });
-
-module.exports = app;
 
 module.exports = app;
