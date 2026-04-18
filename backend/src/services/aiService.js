@@ -46,7 +46,7 @@ async function generateNotes(text) {
           }
         ],
         "summary": "A 2-sentence summary of the entire document.",
-        "diagram": "Mermaid flowchart code (graph TD). EXTREMELY IMPORTANT: Always wrap node labels in double quotes to avoid syntax errors with special characters. Example: A[\"Label (with info)\"] --> B[\"Another / Label\"]."
+        "diagram": "Mermaid flowchart code (graph TD). RULES: 1. Use ONLY square brackets [] for nodes. 2. ALWAYS wrap every label in double quotes: id[\"Label\"]. 3. No nested brackets or special shapes."
       }
       Do not include markdown blocks like \`\`\`json around the output. Only return valid JSON.
 
@@ -186,11 +186,12 @@ async function generateDiagram(text) {
       Based on the following study notes, create a professional Mermaid.js flowchart (graph TD).
       Return ONLY the mermaid code. Do not include markdown blocks or any other text.
       
-      RULES:
+      STRICT RULES:
       1. Start with 'graph TD'.
-      2. ALWAYS wrap all node labels in double quotes: node_id["Full Label Content"].
-      3. Ensure labels containing parentheses, slashes, or special symbols are quoted.
-      4. Use simple alpha-numeric IDs for nodes.
+      2. Use ONLY square brackets [] for ALL nodes (no cylinders, circles, or decisions).
+      3. ALWAYS wrap every node label in double quotes: node_id["Full Label Content"].
+      4. Ensure node IDs are simple alphanumeric strings (e.g., A1, B2).
+      5. Do not use the word 'end' as a node ID.
       
       NOTES:
       ${text.slice(0, 5000)}
