@@ -2,8 +2,22 @@ import axios from 'axios';
 import { supabase } from '../lib/supabase';
 import { auth } from '../lib/firebase';
 
-// Safely construct the baseURL by checking if VITE_API_BASE_URL ends with /api
-const envBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+// Smart URL resolution: prefer whichever env var is NOT localhost.
+// This prevents the app breaking when one platform still has localhost set.
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+function resolveBackendUrl() {
+  const isLocalhost = (url) => !url || url.includes('localhost') || url.includes('127.0.0.1');
+  // Use VITE_API_BASE_URL if it's a real URL
+  if (apiUrl && !isLocalhost(apiUrl)) return apiUrl;
+  // Fall back to VITE_BACKEND_URL if it's a real URL
+  if (backendUrl && !isLocalhost(backendUrl)) return backendUrl;
+  // Last resort: local dev
+  return 'http://localhost:3001';
+}
+
+const envBase = resolveBackendUrl();
 const baseURL = envBase.endsWith('/api') ? envBase : `${envBase}/api`;
 
 const api = axios.create({ baseURL });
