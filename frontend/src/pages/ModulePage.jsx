@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layers, Copy, BrainCircuit, ChevronLeft, Sparkles, Image as ImageIcon } from 'lucide-react';
 import Mermaid from '../components/Mermaid';
+import FlashcardGeneratorModal from '../components/FlashcardGeneratorModal';
 
 import api from '../services/api';
 
@@ -10,6 +11,7 @@ export default function ModulePage() {
   const navigate = useNavigate();
   const [module, setModule] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const [showFlashcardModal, setShowFlashcardModal] = useState(false);
   const [quizCount, setQuizCount] = useState(5);
   const [error, setError] = useState('');
 
@@ -19,18 +21,8 @@ export default function ModulePage() {
       .catch(e => setError(e.message));
   }, [id]);
 
-  async function generateFlashcards() {
-    setGenerating(true);
-    try {
-      const res = await api.post(`/flashcards/generate/${id}`);
-      const data = res.data;
-      if (!data.success) throw new Error(data.error);
-      navigate(`/flashcards/${id}`);
-    } catch (e) {
-      alert('Error: ' + e.message);
-    } finally {
-      setGenerating(false);
-    }
+  async function openFlashcardModal() {
+    setShowFlashcardModal(true);
   }
 
   async function handleQuiz() {
@@ -85,7 +77,7 @@ export default function ModulePage() {
             title="Flashcards"
             desc="Generate Q&A cards via AI"
             color="#9b59ff"
-            onClick={generateFlashcards}
+            onClick={openFlashcardModal}
             loading={generating}
             primary
           />
@@ -155,6 +147,14 @@ export default function ModulePage() {
             ))}
           </div>
         </div>
+
+        {showFlashcardModal && (
+          <FlashcardGeneratorModal 
+            moduleId={id} 
+            onClose={() => setShowFlashcardModal(false)}
+            hasExisting={module.flashcards_count > 0 || (module.flashcards && module.flashcards.length > 0)}
+          />
+        )}
 
       </main>
     </div>
