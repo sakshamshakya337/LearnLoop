@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Layers, Copy, BrainCircuit, ChevronLeft, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Layers, Copy, BrainCircuit, ChevronLeft, Sparkles, Image as ImageIcon, Trash2 } from 'lucide-react';
 import Mermaid from '../components/Mermaid';
 import FlashcardGeneratorModal from '../components/FlashcardGeneratorModal';
 
@@ -11,6 +11,7 @@ export default function ModulePage() {
   const navigate = useNavigate();
   const [module, setModule] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [showFlashcardModal, setShowFlashcardModal] = useState(false);
   const [quizCount, setQuizCount] = useState(5);
   const [error, setError] = useState('');
@@ -20,6 +21,22 @@ export default function ModulePage() {
       .then(res => setModule(res.data))
       .catch(e => setError(e.message));
   }, [id]);
+
+  async function handleDelete() {
+    if (!window.confirm('Are you sure you want to delete this entire module? This will permanently remove all associated notes, flashcards, and quizzes. This action cannot be undone.')) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      await api.delete(`/modules/${id}`);
+      navigate('/dashboard', { replace: true });
+    } catch (err) {
+      console.error('Failed to delete module:', err);
+      alert('Error deleting module: ' + (err.response?.data?.error || err.message));
+      setDeleting(false);
+    }
+  }
 
   async function openFlashcardModal() {
     setShowFlashcardModal(true);
@@ -130,7 +147,7 @@ export default function ModulePage() {
         )}
 
         {/* Notes Preview Section */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 24, padding: '40px' }}>
+        <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 24, padding: '40px', marginBottom: 40 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
             <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)' }}>Structured Notes</h2>
             <div style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.05)' }} />
@@ -146,6 +163,50 @@ export default function ModulePage() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Danger Zone */}
+        <div style={{ 
+          marginTop: 64, 
+          padding: '32px', 
+          borderRadius: 24, 
+          border: '1px solid rgba(255,107,107,0.2)', 
+          background: 'rgba(255,107,107,0.02)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          gap: 16
+        }}>
+          <div>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: '#ff6b6b', marginBottom: 4 }}>Danger Zone</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 400 }}>
+              Deleting this module will permanently remove all study materials. This action cannot be reversed.
+            </p>
+          </div>
+          <button 
+            onClick={handleDelete}
+            disabled={deleting}
+            style={{ 
+              background: deleting ? 'rgba(255,107,107,0.1)' : 'rgba(255,107,107,0.15)',
+              color: '#ff6b6b',
+              border: '1px solid rgba(255,107,107,0.3)',
+              borderRadius: 12,
+              padding: '12px 24px',
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: deleting ? 'wait' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={e => { if(!deleting) e.currentTarget.style.background = 'rgba(255,107,107,0.25)' }}
+            onMouseLeave={e => { if(!deleting) e.currentTarget.style.background = 'rgba(255,107,107,0.15)' }}
+          >
+            <Trash2 size={18} />
+            {deleting ? 'Deleting Module...' : 'Delete Module'}
+          </button>
         </div>
 
         {showFlashcardModal && (

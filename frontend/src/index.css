@@ -219,8 +219,67 @@ input, textarea, select {
 /* ─────────────────────────────────────────────
    Light surfaces for pages like Login/Signup
 ───────────────────────────────────────────── */
+/* ─────────────────────────────────────────────
+   Responsive Overrides
+───────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  :root {
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --radius-md: 12px;
+    --radius-lg: 14px;
+  }
+  
+  .glass-card {
+    border-radius: var(--radius-lg);
+  }
+
+  .btn-primary, .btn-ghost {
+    padding: 10px 18px;
+    font-size: 13px;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   Light surfaces for pages like Login/Signup
+───────────────────────────────────────────── */
 .page-light {
   background: linear-gradient(135deg, #f0eeff 0%, #e8eeff 50%, #eefff6 100%);
   color: #1a1733;
   min-height: 100vh;
+}
+
+/* ─────────────────────────────────────────────
+   Responsive Utilities
+───────────────────────────────────────────── */
+.responsive-padding {
+  padding: 40px;
+}
+
+@media (max-width: 768px) {
+  .responsive-padding {
+    padding: 24px 16px;
+  }
+}
+
+.responsive-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.mobile-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 769px) {
+  .mobile-stack {
+    flex-direction: row;
+  }
 }

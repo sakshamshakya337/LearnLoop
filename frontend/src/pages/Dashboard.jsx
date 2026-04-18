@@ -7,7 +7,7 @@ import {
   BookOpen, LayoutDashboard, Layers, Copy, BrainCircuit,
   Settings, LogOut, UploadCloud, Search, PlusCircle, Flame,
   FileText,Bell, PlayCircle, Headphones, CheckCircle2, ChevronRight,
-  TrendingUp, Award, Clock, Sparkles, Shield
+  TrendingUp, Award, Clock, Sparkles, Shield, Trash2, Menu, X
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import api from '../services/api';
@@ -60,7 +60,7 @@ function StatCard({ icon: Icon, label, value, color, gradient }) {
 }
 
 /* ── module card ─────────────────────────────────────────── */
-function ModuleCard({ type, title, timeAgo, cards, quiz, progress, isNew = false, onClick }) {
+function ModuleCard({ type, title, timeAgo, cards, quiz, progress, isNew = false, onClick, onDelete }) {
   const typeColors = {
     PDF: { bg: 'rgba(255,107,107,0.15)', color: '#ff6b6b' },
     YT: { bg: 'rgba(255,59,48,0.15)', color: '#ff3b30' },
@@ -124,6 +124,35 @@ function ModuleCard({ type, title, timeAgo, cards, quiz, progress, isNew = false
           >
             Ready
           </span>
+        )}
+        
+        {/* Delete Button */}
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            style={{
+              background: 'rgba(255,107,107,0.1)',
+              color: '#ff6b6b',
+              border: 'none',
+              borderRadius: 8,
+              width: 32,
+              height: 32,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'var(--transition-fast)',
+              opacity: 0.4,
+            }}
+            className="group-hover:opacity-100"
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,107,107,0.2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,107,107,0.1)'}
+          >
+            <Trash2 size={16} />
+          </button>
         )}
       </div>
       <h3
@@ -210,6 +239,33 @@ export default function Dashboard() {
   // Real Data states
   const [modules, setModules] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  // Responsive resize listener
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  /* ── delete module ─────────────────────────────── */
+  const handleDeleteModule = async (moduleId) => {
+    if (!window.confirm('Are you sure you want to delete this module? All associated flashcards and quiz data will be lost.')) {
+      return;
+    }
+
+    try {
+      // Optimistic update
+      setModules(prev => prev.filter(m => m.id !== moduleId));
+      
+      await api.delete(`/modules/${moduleId}`);
+    } catch (err) {
+      console.error('Delete module error:', err);
+      alert('Failed to delete module. Please try again.');
+      // Revert on error
+      fetchModules();
+    }
+  };
 
   /* ── fetch authenticated user ─────────────────── */
   useEffect(() => {
@@ -408,8 +464,9 @@ export default function Dashboard() {
         top: 0,
         left: 0,
         height: '100vh',
-        zIndex: 50,
-        transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1)',
+        zIndex: 100,
+        transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        transform: mobileOpen ? 'translateX(0)' : (windowWidth <= 1024 ? 'translateX(-100%)' : 'translateX(0)'),
       }}
     >
       {/* Logo */}
@@ -460,8 +517,8 @@ export default function Dashboard() {
                     navigate(path);
                   } else {
                     setActiveTab(id); 
-                    setMobileOpen(false); 
                   }
+                  setMobileOpen(false); 
                 }}
                 style={{
                   width: '100%',
@@ -504,7 +561,7 @@ export default function Dashboard() {
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <button
-            onClick={() => setActiveTab('settings')}
+            onClick={() => { setActiveTab('settings'); setMobileOpen(false); }}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: 12,
               padding: '11px 12px', borderRadius: 12, border: 'none', cursor: 'pointer',
@@ -687,6 +744,7 @@ export default function Dashboard() {
               cards={mod.status === 'ready' ? (mod.flashcards_count || 0) : undefined} 
               quiz={mod.status === 'ready' ? (mod.quizzes_count || 0) : undefined} 
               onClick={() => mod.status === 'ready' ? navigate(`/modules/${mod.id}`) : null}
+              onDelete={() => handleDeleteModule(mod.id)}
             />
           ))}
 
@@ -783,6 +841,7 @@ export default function Dashboard() {
               progress={mod.status === 'processing' ? 50 : undefined}
               cards={mod.status === 'ready' ? (mod.flashcards_count || 0) : undefined} 
               onClick={() => navigate(`/modules/${mod.id}`)}
+              onDelete={() => handleDeleteModule(mod.id)}
             />
           ))}
         </div>
@@ -925,8 +984,32 @@ export default function Dashboard() {
       {/* Sidebar */}
       <Sidebar />
 
+      {/* Mobile Overlay */}
+      {mobileOpen && (
+        <div 
+          onClick={() => setMobileOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 12, 42, 0.4)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 90,
+            animation: 'fade-up 0.3s ease'
+          }}
+        />
+      )}
+
       {/* Main content */}
-      <main style={{ marginLeft: 260, flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <main 
+        style={{ 
+          marginLeft: windowWidth > 1024 ? 260 : 0, 
+          flex: 1, 
+          minHeight: '100vh', 
+          display: 'flex', 
+          flexDirection: 'column',
+          transition: 'margin-left 0.4s ease'
+        }}
+      >
         {/* Top bar */}
         <header
           style={{
@@ -943,6 +1026,21 @@ export default function Dashboard() {
             gap: 16,
           }}
         >
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            style={{
+              display: windowWidth <= 1024 ? 'flex' : 'none',
+              width: 40, height: 40, borderRadius: 10,
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: 'var(--text-primary)',
+              zIndex: 110
+            }}
+          >
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
           {/* Search bar */}
           <div
             style={{
@@ -1074,7 +1172,7 @@ export default function Dashboard() {
         </header>
 
         {/* Page body */}
-        <div style={{ flex: 1, padding: '40px 40px', overflowY: 'auto' }}>
+        <div style={{ flex: 1, padding: windowWidth > 768 ? '40px 40px' : '20px 20px', overflowY: 'auto' }}>
           {activeTab === 'home' && <HomeContent />}
           {activeTab === 'profile' && <ProfileSection />}
           {activeTab === 'modules' && <ModulesSection />}

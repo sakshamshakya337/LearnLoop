@@ -5,127 +5,71 @@ const router = express.Router();
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helper: Flatten notes_json into clean plain text (NO headings, NO section titles)
-// Only extracts actual content — facts, definitions, explanations
-// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Clean and cap text for AI consumption.
+ */
 function buildCleanNotesText(notesJson) {
   if (!notesJson) return '';
-
   const lines = [];
-
-  // Add summary if present
-  if (notesJson.summary) {
-    lines.push(notesJson.summary.trim());
-    lines.push('');
-  }
-
-  // Add section CONTENT only — skip headings completely
+  if (notesJson.summary) lines.push(notesJson.summary.trim());
   if (Array.isArray(notesJson.sections)) {
     notesJson.sections.forEach(section => {
       if (section.content) {
-        // Strip any markdown heading syntax from content too
         const cleaned = section.content
-          .replace(/^#{1,6}\s+.+$/gm, '')     // remove ## headings inside content
-          .replace(/^\*\*.*?\*\*\s*$/gm, '')   // remove lines that are only bold titles
-          .replace(/\n{3,}/g, '\n\n')           // collapse excess newlines
+          .replace(/^#{1,6}\s+.+$/gm, '')
+          .replace(/^\*\*.*?\*\*\s*$/gm, '')
+          .replace(/\n{3,}/g, '\n\n')
           .trim();
-        if (cleaned) {
-          lines.push(cleaned);
-          lines.push('');
-        }
+        if (cleaned) lines.push(cleaned);
       }
     });
   }
-
-  // Add key terms as context sentences (not as a list)
   if (Array.isArray(notesJson.keyTerms) && notesJson.keyTerms.length > 0) {
-    lines.push(`Important terms in this content include: ${notesJson.keyTerms.join(', ')}.`);
+    lines.push(`Key terms: ${notesJson.keyTerms.join(', ')}.`);
   }
-
-  return lines.join('\n').trim();
+  return lines.join('\n').trim().slice(0, 4000);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helper: Split large text into chunks so we don't exceed Groq context
-// Each chunk ~6000 chars, with 200 char overlap to preserve context
-// ─────────────────────────────────────────────────────────────────────────────
-function chunkText(text, chunkSize = 6000, overlap = 200) {
-  const chunks = [];
-  let start = 0;
-  while (start < text.length) {
-    const end = Math.min(start + chunkSize, text.length);
-    chunks.push(text.slice(start, end));
-    start = end - overlap;
-    if (start >= text.length) break;
-  }
-  return chunks;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helper: Call Groq to generate flashcards from one chunk
-// difficulty: 'easy' | 'medium' | 'hard' | 'mixed'
-// count: how many cards to generate from this chunk
-// ─────────────────────────────────────────────────────────────────────────────
-async function generateCardsFromChunk(chunkText, count, difficulty) {
+/**
+ * AI Generation Call
+ */
+async function generateCardsFromChunk(text, count, difficulty) {
   const difficultyInstruction = difficulty === 'mixed'
-    ? `Generate a mix: roughly 30% easy, 40% medium, 30% hard cards.`
+    ? 'Mix easy, medium and hard cards.'
     : `Generate only "${difficulty}" difficulty cards.`;
 
-  const systemPrompt = `You are an expert flashcard creator for students. Your job is to generate high-quality study flashcards from content.
-
-STRICT RULES:
-1. NEVER use section headings, chapter titles, or topic names as questions (e.g. never ask "What is the title of section 2?")
-2. Questions must test UNDERSTANDING of facts, definitions, processes, comparisons, or applications
-3. Questions should be specific and unambiguous
-4. Answers must be concise but complete — 1 to 4 sentences max
-5. ${difficultyInstruction}
-6. Easy = recall a single fact or definition
-7. Medium = explain a concept, state a relationship, or describe a process
-8. Hard = compare/contrast, apply to a scenario, explain why/how, or synthesize multiple concepts
-9. Do NOT repeat similar questions
-10. Do NOT include questions about formatting, headings, document structure, or meta-information
-
-Return ONLY a valid JSON array. No markdown, no preamble, no explanation outside the array.
-
-Each item must be exactly:
-{
-  "question": "string",
-  "answer": "string",
-  "difficulty": "easy" | "medium" | "hard"
-}`;
-
-  const userPrompt = `Generate exactly ${count} flashcards from the following study content. Cover ALL distinct facts and concepts found in the text — do not focus only on the beginning.
-
-Content:
-${chunkText}`;
-
   const completion = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
-    temperature: 0.5,
-    max_tokens: 4096,
+    model: 'llama-3.1-8b-instant',
+    temperature: 0.4,
+    max_tokens: 1200,
     messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
+      {
+        role: 'system',
+        content: `You are a flashcard generator. Return ONLY a JSON array, no markdown, no preamble.
+Each item: {"question":"string","answer":"string","difficulty":"easy"|"medium"|"hard"}
+Rules:
+- Never ask about headings or document structure
+- Answers max 2 sentences
+- ${difficultyInstruction}`
+      },
+      {
+        role: 'user',
+        content: `Generate exactly ${count} flashcards from this content:\n\n${text}`
+      }
     ]
   });
 
-  const raw = completion.choices[0].message.content.trim();
-
-  const clean = raw
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim();
+  const raw = completion.choices[0].message.content.trim()
+    .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
 
   try {
-    const parsed = JSON.parse(clean);
-    if (!Array.isArray(parsed)) throw new Error('Response is not an array');
-    return parsed;
-  } catch (e) {
-    const match = clean.match(/\[[\s\S]*\]/);
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    throw new Error('Not an array');
+  } catch {
+    const match = raw.match(/\[[\s\S]*\]/);
     if (match) return JSON.parse(match[0]);
-    throw new Error('Failed to parse flashcard JSON: ' + e.message);
+    return [];
   }
 }
 
@@ -133,115 +77,91 @@ ${chunkText}`;
 router.post('/generate/:moduleId', async (req, res) => {
   try {
     const moduleId = req.params.moduleId;
+    const userId = req.body.userId; // Direct extraction as requested
 
-    let requestedCount = parseInt(req.body.count) || 20;
-    requestedCount = Math.max(5, Math.min(100, requestedCount));
+    if (!userId) {
+      return res.status(401).json({ error: 'User ID missing in request.' });
+    }
 
+    console.log(`[GENERATOR] Start for User: ${userId}, Module: ${moduleId}`);
+
+    let requestedCount = parseInt(req.body.count) || 8;
+    requestedCount = Math.max(5, Math.min(20, requestedCount));
     const difficulty = ['easy', 'medium', 'hard', 'mixed'].includes(req.body.difficulty)
-      ? req.body.difficulty
-      : 'mixed';
+      ? req.body.difficulty : 'mixed';
 
-    const replace = req.body.replace === true || req.body.replace === 'true';
-
+    // 1. Fetch Module & Verify Ownership (STRICT SECURITY)
     const { data: module, error: modErr } = await supabaseAdmin
       .from('modules')
-      .select('*')
+      .select('id, user_id, notes_json')
       .eq('id', moduleId)
       .single();
 
-    if (modErr || !module) return res.status(404).json({ error: 'Module not found' });
+    if (modErr || !module) {
+      return res.status(404).json({ error: 'Module not found.' });
+    }
+    
+    // Ownership Check: Ensures user only generates cards for notes they own
+    if (module.user_id !== userId) {
+      console.warn(`[SECURITY] Forbidden: User ${userId} tried to access module owned by ${module.user_id}`);
+      return res.status(403).json({ error: 'Permission denied. You do not own this module.' });
+    }
 
     const cleanText = buildCleanNotesText(module.notes_json);
-
     if (!cleanText || cleanText.length < 50) {
-      return res.status(400).json({ error: 'Module has insufficient content to generate flashcards' });
+      return res.status(400).json({ error: 'Not enough content to generate cards.' });
     }
 
-    const chunks = chunkText(cleanText, 6000, 200);
+    // 2. Generate Cards
+    const cards = await generateCardsFromChunk(cleanText, requestedCount, difficulty);
 
-    const cardsPerChunk = chunks.map((_, i) => {
-      if (chunks.length === 1) return requestedCount;
-      const base = Math.floor(requestedCount / chunks.length);
-      const remainder = requestedCount % chunks.length;
-      return i < remainder ? base + 1 : base;
-    });
-
-    const chunkResults = [];
-    for (const [i, chunk] of chunks.entries()) {
-      try {
-        const result = await generateCardsFromChunk(chunk, Math.max(1, cardsPerChunk[i]), difficulty);
-        chunkResults.push(result);
-      } catch (err) {
-        console.error(`Chunk ${i} failed:`, err.message);
-        chunkResults.push([]);
-      }
-    }
-    let allCards = chunkResults.flat();
-
-    const seen = new Set();
-    allCards = allCards.filter(card => {
-      if (!card.question || !card.answer) return false;
-      const key = card.question.toLowerCase().replace(/[^a-z0-9\s]/g, '').slice(0, 60).trim();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-
-    allCards = allCards.slice(0, requestedCount);
-
-    if (allCards.length === 0) {
-      return res.status(500).json({ error: 'AI failed to generate valid flashcards. Please try again.' });
-    }
-
-    if (replace) {
-      await supabaseAdmin.from('flashcards').delete().eq('module_id', moduleId);
-    }
-
-    const rows = allCards.map(card => ({
+    const rows = cards.map(card => ({
       module_id: moduleId,
-      question: card.question.trim(),
-      answer: card.answer.trim(),
+      user_id: userId,
+      question: card.question?.trim(),
+      answer: card.answer?.trim(),
       difficulty: ['easy', 'medium', 'hard'].includes(card.difficulty) ? card.difficulty : 'medium',
-      next_review: new Date().toISOString(),
-      interval: 1,
-      ease: 2.5
-    }));
+      next_review: new Date().toISOString()
+    })).filter(c => c.question && c.answer).slice(0, requestedCount);
 
+    if (rows.length === 0) {
+      return res.status(500).json({ error: 'AI failed to generate cards. Try again.' });
+    }
+
+    // 3. Database Sync (Delete then Insert)
+    // We explicitly clear old cards for this specific module/user combo
+    await supabaseAdmin.from('flashcards')
+      .delete()
+      .eq('module_id', moduleId)
+      .eq('user_id', userId);
+
+    // Insert New Cards
     const { data: saved, error: saveErr } = await supabaseAdmin
       .from('flashcards')
       .insert(rows)
-      .select();
+      .select('id, question, answer, difficulty'); 
 
-    if (saveErr) return res.status(500).json({ error: saveErr.message });
+    if (saveErr) {
+      console.error('[DB ERROR]', saveErr.message);
+      return res.status(500).json({ error: saveErr.message });
+    }
 
-    res.json({
-      success: true,
-      count: saved.length,
-      requested: requestedCount,
-      chunks_processed: chunks.length,
-      flashcards: saved
-    });
+    res.json({ success: true, count: saved.length, flashcards: saved });
 
   } catch (err) {
-    console.error('Flashcard generation error:', err);
-    res.status(500).json({ error: err.message });
+    console.error('[SYSTEM ERROR]', err.message);
+    res.status(500).json({ error: 'System error during generation. Please try again.' });
   }
 });
 
 // GET /api/flashcards/:moduleId
 router.get('/:moduleId', async (req, res) => {
-  let query = supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('flashcards')
-    .select('*')
+    .select('id, question, answer, difficulty, next_review, created_at')
     .eq('module_id', req.params.moduleId)
-    .order('difficulty', { ascending: true })
     .order('created_at', { ascending: true });
 
-  if (req.query.difficulty) {
-    query = query.eq('difficulty', req.query.difficulty);
-  }
-
-  const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 });

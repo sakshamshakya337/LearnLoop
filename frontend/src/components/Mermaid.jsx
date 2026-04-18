@@ -5,8 +5,24 @@ mermaid.initialize({
   startOnLoad: false,
   theme: 'dark',
   flowchart: { htmlLabels: false },
-  securityLevel: 'loose',
+  securityLevel: 'loose'
 });
+
+function fixMermaid(code) {
+  if (!code) return '';
+  return code
+    .replace(/```mermaid/g, '')
+    .replace(/```/g, '')
+    .trim()
+    .split('\n')
+    .map(line =>
+      // Remove all special chars inside square brackets
+      line.replace(/\[([^\]]*)\]/g, (_, txt) =>
+        '[' + txt.replace(/[()\/\\<>"&]/g, ' ').replace(/\s+/g, ' ').trim() + ']'
+      )
+    )
+    .join('\n');
+}
 
 export default function Mermaid({ chart }) {
   const ref = useRef(null);
@@ -19,13 +35,9 @@ export default function Mermaid({ chart }) {
 
     const renderChart = async () => {
       try {
-        // Pre-processing: Strip common LLM markdown artifacts without touching syntax
-        let cleanChart = chart
-          .replace(/```mermaid/g, '')
-          .replace(/```/g, '')
-          .trim();
-
         const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+        const cleanChart = fixMermaid(chart);
+        
         const { svg } = await mermaid.render(id, cleanChart);
         
         if (ref.current) {

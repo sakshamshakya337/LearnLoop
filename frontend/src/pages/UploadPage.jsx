@@ -70,8 +70,8 @@ export default function UploadPage() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--surface-base)', fontFamily: 'Sora, sans-serif', padding: '40px' }}>
-      <main style={{ maxWidth: 700, margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div className="responsive-padding" style={{ display: 'flex', minHeight: '100vh', background: 'var(--surface-base)', fontFamily: 'Sora, sans-serif' }}>
+      <main className="responsive-container" style={{ margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
         
         <header style={{ marginBottom: 40, textAlign: 'center' }}>
           <h1 style={{ fontSize: 32, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: 12 }}>

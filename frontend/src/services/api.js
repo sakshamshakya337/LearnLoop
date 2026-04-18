@@ -24,17 +24,23 @@ const api = axios.create({ baseURL });
 
 // Request interceptor to automatically add auth tokens/IDs
 api.interceptors.request.use(async (config) => {
-  let userId = null;
-
-  // Firebase currentUser ID
-  if (auth.currentUser) {
-    userId = auth.currentUser.uid;
+  try {
+    // 1. Try Supabase Session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      config.headers.Authorization = `Bearer ${session.access_token}`;
+      config.headers['x-user-id'] = session.user.id;
+    } 
+    // 2. Fallback to Firebase (Main Auth)
+    else if (auth.currentUser) {
+      // Force refresh if needed to get latest ID Token
+      const fbToken = await auth.currentUser.getIdToken(false);
+      config.headers.Authorization = `Bearer ${fbToken}`;
+      config.headers['x-user-id'] = auth.currentUser.uid;
+    }
+  } catch (err) {
+    console.warn('[AUTH INTERCEPTOR] Handled rejection:', err.message);
   }
-
-  if (userId) {
-    config.headers['x-user-id'] = userId;
-  }
-
   return config;
 }, (error) => {
   return Promise.reject(error);

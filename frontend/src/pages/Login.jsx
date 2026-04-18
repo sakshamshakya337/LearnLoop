@@ -73,16 +73,16 @@ const Login = () => {
     try {
       const res = await signInWithPopup(auth, googleProvider);
       
-      // Ensure the user exists in profiles DB so foreign keys don't fail
-      const { error: dbError } = await supabase.from('profiles').insert({
+      // Ensure the user exists in profiles DB without causing a 409 conflict
+      const { error: dbError } = await supabase.from('profiles').upsert({
         id: res.user.uid,
         email: res.user.email,
         full_name: res.user.displayName || res.user.email.split('@')[0],
         avatar_url: res.user.photoURL,
         role: 'user'
-      });
-      // Ignore if they already exist
-      if (dbError && dbError.code !== '23505') throw dbError;
+      }, { onConflict: 'id' });
+      
+      if (dbError) throw dbError;
       
       navigate('/dashboard');
     } catch (err) {

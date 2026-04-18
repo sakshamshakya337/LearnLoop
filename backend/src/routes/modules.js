@@ -78,4 +78,39 @@ router.patch('/:id/notes', async (req, res) => {
   }
 });
 
+// DELETE /api/modules/:id — remove a module securely
+router.delete('/:id', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    
+    // 1. Check ownership first to avoid deleting other users' modules
+    const { data: module, error: fetchError } = await supabaseAdmin
+      .from('modules')
+      .select('user_id')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError || !module) {
+      return res.status(404).json({ error: 'Module not found' });
+    }
+
+    if (module.user_id !== userId) {
+      return res.status(403).json({ error: 'Unauthorized: You do not own this module' });
+    }
+
+    // 2. Perform deletion
+    const { error: deleteError } = await supabaseAdmin
+      .from('modules')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('user_id', userId); // Extra safety
+
+    if (deleteError) throw deleteError;
+    res.json({ success: true, message: 'Module deleted successfully' });
+  } catch (error) {
+    console.error('Module delete error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

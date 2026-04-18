@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { supabase } from '../lib/supabase';
+import { auth } from '../lib/firebase';
 
 /**
  * FlashcardGeneratorModal
@@ -12,14 +14,14 @@ import api from '../services/api';
  */
 export default function FlashcardGeneratorModal({ moduleId, onClose, hasExisting }) {
   const navigate = useNavigate();
-  const [count, setCount] = useState(20);
+  const [count, setCount] = useState(8);
   const [difficulty, setDifficulty] = useState('mixed');
   const [replace, setReplace] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState('');
 
-  const PRESETS = [10, 20, 30, 50];
+  const PRESETS = [5, 10, 15];
   const DIFFICULTY_OPTIONS = [
     { value: 'mixed',  label: '🎲 Mixed',  desc: 'Basic to advanced' },
     { value: 'easy',   label: '🟢 Easy',   desc: 'Definitions & recall' },
@@ -28,30 +30,41 @@ export default function FlashcardGeneratorModal({ moduleId, onClose, hasExisting
   ];
 
   async function handleGenerate() {
-    if (count < 5 || count > 100) {
-      setError('Please enter a number between 5 and 100.');
+    // 1. Professional Auth Guard (Checks both Supabase and Firebase)
+    const fbUser = auth.currentUser;
+    const { data: { user: sbUser } } = await supabase.auth.getUser();
+    
+    const currentUser = fbUser || sbUser;
+
+    if (!currentUser) {
+      alert("Session expired. Please login again to generate flashcards.");
+      return;
+    }
+
+    if (count < 5 || count > 15) {
+      setError('Please enter a number between 5 and 15.');
       return;
     }
     setError('');
     setLoading(true);
-    setProgress('Sending notes to AI...');
+    setProgress('Checking identity...');
 
     try {
-      // Simulate progress messages while waiting
+      // Progress simulation
       const progressMessages = [
-        'Analysing content...',
-        'Generating questions from every section...',
+        'Analyzing content...',
+        'Generating questions...',
         'Building answers...',
-        'Sorting by difficulty...',
         'Almost done...'
       ];
       let msgIndex = 0;
       const progressInterval = setInterval(() => {
         msgIndex = (msgIndex + 1) % progressMessages.length;
         setProgress(progressMessages[msgIndex]);
-      }, 2500);
+      }, 3000);
 
       const res = await api.post(`/flashcards/generate/${moduleId}`, {
+        userId: currentUser.uid || currentUser.id,
         count,
         difficulty,
         replace
@@ -60,14 +73,16 @@ export default function FlashcardGeneratorModal({ moduleId, onClose, hasExisting
       clearInterval(progressInterval);
       
       const data = res.data;
-
       if (!data.success) throw new Error(data.error);
 
       setProgress(`✅ Generated ${data.count} flashcards!`);
       setTimeout(() => navigate(`/flashcards/${moduleId}`), 800);
 
     } catch (e) {
-      setError(e.response?.data?.error || e.message || 'Something went wrong. Please try again.');
+      console.error('Generation Error:', e);
+      const msg = e.response?.data?.error || e.message || 'Something went wrong.';
+      const hint = e.response?.data?.hint ? ` Hint: ${e.response.data.hint}` : '';
+      setError(`${msg}${hint}`);
     } finally {
       setLoading(false);
     }
@@ -108,13 +123,13 @@ export default function FlashcardGeneratorModal({ moduleId, onClose, hasExisting
             <input
               type="number"
               min={5}
-              max={100}
+              max={15}
               value={count}
               onChange={e => setCount(parseInt(e.target.value) || 0)}
               style={styles.countInput}
               disabled={loading}
             />
-            <span style={styles.customLabel}>cards (5–100)</span>
+            <span style={styles.customLabel}>cards (5–15)</span>
           </div>
         </div>
 

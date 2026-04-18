@@ -196,84 +196,8 @@ const Home = () => {
         </p>
       </div>
     </section>
-
-    {/* ── STATS STRIP ────────────────────────────────────────── */}
-    <section style={{ borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)', padding: '40px 24px' }}>
-      <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 32 }}>
-        <StatPill value="NA" label="Students using LearnLoop" />
-        <StatPill value="NA" label="Flashcards generated" />
-        <StatPill value="NA" label="Average rating" />
-        <StatPill value="10×" label="Faster study prep" />
-      </div>
-    </section>
-
-    {/* ── FEATURES ───────────────────────────────────────────── */}
-    <section id="features" style={{ padding: '100px 24px', maxWidth: 1200, margin: '0 auto' }}>
-      <div style={{ textAlign: 'center', marginBottom: 64 }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: '#8b96ff', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 14 }}>What you get</p>
-        <h2 style={{ fontSize: 'clamp(28px, 4vw, 46px)', fontWeight: 800, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 16 }}>
-          Everything you need to ace it
-        </h2>
-        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', maxWidth: 500, margin: '0 auto' }}>
-          Your personalized AI greenhouse for accelerated, retention-focused learning.
-        </p>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-        <FeatureCard icon={FileText} iconBg="linear-gradient(135deg,#5b6ef5,#9b59ff)" title="Smart AI Notes" desc="Automatically extracts key concepts, creates structured headers, and builds clean summaries from any document or lecture." />
-        <FeatureCard icon={Brain} iconBg="linear-gradient(135deg,#00c06b,#00e5a0)" title="Instant Flashcards" desc="Turn any PDF or video into spaced-repetition flashcard decks in seconds. Stop wasting time building them manually." />
-        <FeatureCard icon={Mic} iconBg="linear-gradient(135deg,#ff9f43,#ff6b6b)" title="AI Audio Podcasts" desc="Listen on the go. LearnLoop converts your study modules into engaging, conversational audio scripts you can play anywhere." />
-        <FeatureCard icon={Upload} iconBg="linear-gradient(135deg,#9b59ff,#5b6ef5)" title="Any Format" desc="Upload PDFs, DOCX files, audio files — or paste a YouTube URL. Our AI handles transcription and structuring for you." />
-        <FeatureCard icon={Globe} iconBg="linear-gradient(135deg,#00c06b,#5b6ef5)" title="AI Tutor Chat" desc="Ask questions directly about your study material. Get instant, context-aware answers grounded in your uploaded documents." />
-        <FeatureCard icon={CheckCircle2} iconBg="linear-gradient(135deg,#ff6b6b,#9b59ff)" title="Smart Quizzes" desc="Adaptive quizzes that test your weak spots and track your mastery over time with detailed performance analytics." />
-      </div>
-    </section>
-
-    {/* ── HOW IT WORKS ────────────────────────────────────────── */}
-    <section style={{ padding: '80px 24px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-      <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: '#8b96ff', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 14 }}>How it works</p>
-        <h2 style={{ fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: '#fff', letterSpacing: '-0.03em', marginBottom: 56 }}>
-          Three steps to smarter studying
-        </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 32 }}>
-          {[
-            { step: '01', title: 'Upload Content', desc: 'Drop any PDF, paste a YouTube link, or record audio. We ingest it all.' },
-            { step: '02', title: 'AI Processes It', desc: 'Our Gemini-powered AI generates notes, flashcards, and quiz questions automatically.' },
-            { step: '03', title: 'Master It Faster', desc: 'Study with adaptive tools designed to maximize retention and cut prep time by 10×.' },
-          ].map(({ step, title, desc }) => (
-            <div key={step} style={{ position: 'relative' }}>
-              <div style={{ fontSize: 48, fontWeight: 800, color: 'rgba(91,110,245,0.2)', letterSpacing: '-0.06em', lineHeight: 1, marginBottom: 12 }}>{step}</div>
-              <h3 style={{ fontWeight: 700, fontSize: 18, color: '#fff', marginBottom: 10 }}>{title}</h3>
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', lineHeight: 1.65 }}>{desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    {/* ── CTA BANNER ──────────────────────────────────────────── */}
-    <section style={{ padding: '100px 24px' }}>
-      <div style={{ maxWidth: 780, margin: '0 auto', textAlign: 'center', background: 'linear-gradient(135deg, rgba(91,110,245,0.2) 0%, rgba(155,89,255,0.15) 100%)', border: '1px solid rgba(91,110,245,0.3)', borderRadius: 32, padding: '64px 40px', position: 'relative', overflow: 'hidden' }}>
-        {/* Glow */}
-        <div style={{ position: 'absolute', top: '-30%', left: '50%', transform: 'translateX(-50%)', width: 400, height: 300, background: 'radial-gradient(ellipse, rgba(91,110,245,0.4) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <h2 style={{ fontSize: 'clamp(26px, 4vw, 44px)', fontWeight: 800, color: '#fff', letterSpacing: '-0.03em', marginBottom: 16, position: 'relative' }}>
-          Ready to loop into learning?
-        </h2>
-        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', marginBottom: 36, position: 'relative' }}>
-          Join thousands of scholars already saving hours every week on study prep.
-        </p>
-        <Link to="/signup" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '15px 36px', borderRadius: 14, background: 'linear-gradient(135deg,#5b6ef5,#9b59ff)', color: '#fff', fontWeight: 700, fontSize: 17, textDecoration: 'none', boxShadow: '0 8px 32px rgba(91,110,245,0.5)', position: 'relative', fontFamily: 'Sora, sans-serif', transition: 'all 0.25s ease' }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 16px 48px rgba(91,110,245,0.6)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(91,110,245,0.5)'; }}
-        >
-          Create Free Account <ArrowRight size={18} />
-        </Link>
-        <p style={{ marginTop: 20, fontSize: 13, color: 'rgba(255,255,255,0.25)', position: 'relative' }}>No credit card required. Full features free for 24 hours.</p>
-      </div>
-    </section>
   </Layout>
-  );
+);
 };
 
 export default Home;

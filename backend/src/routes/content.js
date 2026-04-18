@@ -114,6 +114,14 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'Could not extract text' });
     }
 
+    // Cap input text to avoid OOM crashes during AI processing
+    extractedText = extractedText.slice(0, 15000);
+
+    // Free up buffer memory immediately after parsing
+    if (req.file) {
+      req.file.buffer = null;
+    }
+
     // Generate Notes via Gemini
     const notesData = await generateNotes(extractedText);
 
