@@ -46,7 +46,7 @@ async function generateNotes(text) {
           }
         ],
         "summary": "A 2-sentence summary of the entire document.",
-        "diagram": "Mermaid flowchart or mindmap code representing the concept"
+        "diagram": "Mermaid flowchart code (graph TD). EXTREMELY IMPORTANT: Always wrap node labels in double quotes to avoid syntax errors with special characters. Example: A[\"Label (with info)\"] --> B[\"Another / Label\"]."
       }
       Do not include markdown blocks like \`\`\`json around the output. Only return valid JSON.
 
@@ -183,8 +183,14 @@ async function generateDiagram(text) {
 
   try {
     const prompt = `
-      Based on the following study notes, create a professional Mermaid.js mindmap or flowchart.
+      Based on the following study notes, create a professional Mermaid.js flowchart (graph TD).
       Return ONLY the mermaid code. Do not include markdown blocks or any other text.
+      
+      RULES:
+      1. Start with 'graph TD'.
+      2. ALWAYS wrap all node labels in double quotes: node_id["Full Label Content"].
+      3. Ensure labels containing parentheses, slashes, or special symbols are quoted.
+      4. Use simple alpha-numeric IDs for nodes.
       
       NOTES:
       ${text.slice(0, 5000)}
