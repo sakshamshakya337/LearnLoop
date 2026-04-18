@@ -76,7 +76,7 @@ async function generateNotes(text) {
     const notes = JSON.parse(cleanedJson);
     
     if (notes.diagram) {
-      notes.diagram = sanitizeMermaid(notes.diagram);
+      notes.diagram = cleanMermaid(notes.diagram);
     }
     
     return notes;
@@ -181,19 +181,13 @@ async function generateQuizzes(text, count = 5) {
   }
 }
 
-function sanitizeMermaid(raw) {
-  if (!raw) return '';
-  return raw
-    .replace(/^```mermaid\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim()
+function cleanMermaid(text) {
+  if (!text) return '';
+  return text
+    .replace(/```mermaid/g, '').replace(/```/g, '').trim()
     .split('\n')
-    .map(line =>
-      line
-        .replace(/\[([^\]]+)\]/g, (_, t) => `[${t.replace(/\//g,' ').replace(/[<>"\\]/g,' ')}]`)
-        .replace(/\(([^)]+)\)/g, (_, t) => `(${t.replace(/\//g,' ').replace(/[<>"\\]/g,' ')})`)
-    ).join('\n');
+    .map(line => line.replace(/\[([^\]]*)\]/g, (_, t) => '[' + t.replace(/[\/\\<>"&]/g, ' ') + ']'))
+    .join('\n');
 }
 
 /**
@@ -232,7 +226,7 @@ async function generateDiagram(text) {
       diagramCode = result.response.text().trim();
     }
 
-    return sanitizeMermaid(diagramCode);
+    return cleanMermaid(diagramCode);
   } catch (err) {
     console.error('Diagram gen error:', err);
     return "graph TD\nA[Error generating diagram] --> B[Check content]";

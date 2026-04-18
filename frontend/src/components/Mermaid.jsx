@@ -3,10 +3,9 @@ import mermaid from "mermaid";
 
 mermaid.initialize({
   startOnLoad: false,
-  theme: "dark", 
+  theme: 'dark',
+  flowchart: { htmlLabels: false },
   securityLevel: 'loose',
-  fontFamily: 'Sora, sans-serif',
-  flowchart: { htmlLabels: false }
 });
 
 export default function Mermaid({ chart }) {
